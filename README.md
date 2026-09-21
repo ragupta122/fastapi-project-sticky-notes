@@ -1,0 +1,1 @@
+# fastapi-project-sticky-notes
