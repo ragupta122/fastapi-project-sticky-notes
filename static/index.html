@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sticky notes</title>
+    <style>
+        body { font: 16px system-ui, sans-serif; max-width: 640px;
+               margin: 40px auto; padding: 0 16px; }
+        .note { border: 1px solid #ddd; border-radius: 8px;
+                padding: 12px 14px; margin-bottom: 12px; }
+        .note h3 { margin: 0 0 4px; font-size: 16px; }
+        .note p { margin: 0 0 8px; color: #555; white-space: pre-wrap; }
+        input, textarea, button { font: inherit; }
+        input, textarea { width: 100%; padding: 8px; margin-bottom: 8px;
+                          border: 1px solid #ccc; border-radius: 6px; }
+        button { padding: 7px 12px; border-radius: 6px; cursor: pointer; }
+        #status { color: #b3261e; min-height: 20px; }
+    </style>
+</head>
+<body>
+
+<h1>Sticky notes</h1>
+
+<input id="title" placeholder="Title">
+<textarea id="body" rows="3" placeholder="Write something"></textarea>
+<button onclick="addNote()">Add note</button>
+<p id="status"></p>
+
+<div id="list"></div>
+
+<script>
+    const API = "/api/notes";
+
+    async function loadNotes() {
+      const res = await fetch(API);
+      const notes = await res.json();
+      const list = document.getElementById("list");
+
+      if (notes.length === 0) {
+        list.innerHTML = "<p>No notes yet.</p>";
+        return;
+      }
+
+      list.innerHTML = "";
+      for (const note of notes) {
+        const div = document.createElement("div");
+        div.className = "note";
+
+        const h3 = document.createElement("h3");
+        h3.textContent = note.title;
+
+        const p = document.createElement("p");
+        p.textContent = note.body;
+
+        const del = document.createElement("button");
+        del.textContent = "Delete";
+        del.onclick = () => deleteNote(note.id);
+
+        div.append(h3, p, del);
+        list.appendChild(div);
+      }
+    }
+
+    async function addNote() {
+      const title = document.getElementById("title").value.trim();
+      const body = document.getElementById("body").value;
+      const status = document.getElementById("status");
+
+      if (!title) {
+        status.textContent = "Enter a title first.";
+        return;
+      }
+      status.textContent = "";
+
+      const res = await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, body })
+      });
+
+      if (!res.ok) {
+        status.textContent = "Could not save that note.";
+        return;
+      }
+
+      document.getElementById("title").value = "";
+      document.getElementById("body").value = "";
+      loadNotes();
+    }
+
+    async function deleteNote(id) {
+      await fetch(API + "/" + id, { method: "DELETE" });
+      loadNotes();
+    }
+
+    loadNotes();
+</script>
+
+</body>
+</html>
